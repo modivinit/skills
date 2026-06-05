@@ -5,11 +5,15 @@ description: Read a codebase or architecture document, think like an attacker, a
 
 # Devil's Advocate — Adversarial Hardening & Testing
 
+Attack the design before someone else does. Adversarial review for a codebase or an architecture doc — ending in tests and rules, not advice.
+
 ## What this skill is for
 
 Most reviews check "does the happy path work." This one asks the opposite question: **if a hostile person sent every input, would the system hold?** It reads a design (code or an architecture doc), thinks like an attacker, and produces a concrete hardening + testing plan written so that both a non-engineer and a future Claude Code session can act on it.
 
-The guiding principle, repeated throughout: **a recommendation is only finished when it ships as a test plus an enforcement rule — never as advice.** "You should validate inputs" is not a deliverable; "here is the negative test to add and the lint rule that enforces it" is.
+**This is the skill: a recommendation is finished only when it ships as a test plus an enforcement rule. Everything else is advice theater.** "You should validate inputs" = not done. "Here's the negative test that fails on the attack, plus the lint rule that stops anyone re-adding the bug" = done. If you can't name the test, the recommendation isn't ready — say so, don't pad.
+
+**Anti-pattern: advice theater.** A report full of "consider," "should," and "might want to," with no test and no rule attached. That's the exact failure mode this skill exists to kill.
 
 ## The method in one breath
 
@@ -21,7 +25,7 @@ Walk five attacker questions against the target. Each maps to a real attacker, a
 4. **"Can I hijack the AI?"** — prompt injection (only if the system uses an LLM)
 5. **"If I get in, what can I take, and can I erase it?"** — data protection & deletion
 
-Full plain-English detail, with defenses and tests for each, is in `reference/five-questions.md`. Read it at the start of every run — it is the backbone of the analysis.
+Full plain-English detail, with defenses and tests for each, is in `reference/five-questions.md`. Read it at the start of every run — it's the backbone, and skipping it is skipping the skill.
 
 ## The workflow — four phases
 
@@ -36,12 +40,14 @@ Phases 1–3 (and the optional 3.5) are **read-only and conversational**. Phase 
    Use search broadly here. If the target is large, spawn parallel search agents rather than reading everything yourself.
 3. Write a short **"Here's what I think your system is"** summary in plain English — what it does, where data enters, who the users are, what's stored, what's trusted. Ask the user to confirm or correct it. This anchors everything and catches misreadings while they're cheap.
 
+**Do not proceed to Phase 2 until the user confirms your system summary.** A misread system produces a confident, wrong threat model — the most expensive kind.
+
 ### Phase 2 — Threat-map against the five questions
 
 For each of the five questions, record four things:
 
-- **Applies?** Some questions won't (a static marketing site has no tenant-isolation surface; a no-LLM app skips prompt injection). When a question doesn't apply, write *"not applicable, because…"* explicitly. Silence is never treated as safety.
-- **The attacker** for *this* system, in one sentence.
+- **Applies?** Some questions won't (a static marketing site has no tenant-isolation surface; a no-LLM app skips prompt injection). **Silence is not safety** — a question you skip without a reason is a gap you're pretending isn't there. Either write *"not applicable, because…"* or treat it as applicable.
+- **The attacker** for *this* system, in one sentence, concrete enough to test. "A paying user swaps another tenant's invoice ID into `GET /invoices/:id`." If you can't name the move, you don't understand the surface yet.
 - **Already defended** — what the design already does right (say so; it builds trust and avoids noise).
 - **Missing or weak** — the gap.
 
@@ -88,7 +94,7 @@ Placement rules:
 - Prefer prose with a few tight lists over walls of bullets.
 - Name realistic attackers, not abstractions ("a paying user swapping an ID," not "a threat actor").
 - Every defense in the final docs must be paired with a test and an enforcement mechanism. If you can't name a test for a recommendation, it's not ready — say so rather than padding the report.
-- Don't invent vulnerabilities to look thorough. "This area looks well-handled" is a valid and valuable finding.
+- **Don't invent vulnerabilities to look thorough.** "This area is well-handled" is a finding, and a valuable one. A padded report trains the user to ignore the real ones.
 
 ## When NOT to over-apply this skill
 
