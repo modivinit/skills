@@ -1,0 +1,23 @@
+<!-- ===== Adversarial Hardening Disciplines (added by devils-advocate skill, {{DATE}}) ===== -->
+
+## Security Disciplines (canonical — follow on every change)
+
+These rules are derived from `ADVERSARIAL_HARDENING.md` and proven by `ADVERSARIAL_TEST_PLAN.md`. Treat them as constraints, not suggestions.
+
+- **Every defense ships with a lint rule AND a negative test.** A defense described only in prose is incomplete and is treated as a bug. If you add a defense, add its enforcement and its test in the same change.
+
+- **Owned data goes through ownership helpers.** Every read/write of user-owned data uses the ownership helper (verified user ID → ownership chain). Raw queries against ownership-bearing tables are banned outside the helper module ({{lint rule name}}). Helpers return 404, not 403. New routes add rows to `cross_user_idor` before merge.
+
+- **All ingested bytes are hostile until validated.** Every new ingestion path enforces: HTML sanitization (server-side), SVG rejection, MIME + source allowlist, size/dimension/page caps, no execution of extracted content, content-hash integrity. Add rows to `ingestion_rejection` before merge.
+
+- **Outbound server fetch is allowlisted and fail-closed.** Any server-side fetch of a user-influenced URL goes through the SSRF-guarded helper (domain allowlist, no blind redirects, DNS-rebinding check, MIME/size/time caps, no user cookies). Direct fetch to dynamic URLs is banned outside the helper.
+
+- **No untrusted text reaches the model outside a labeled tag.** {{If LLM in use}} External/retrieved content is tag-wrapped and declared as data, not instructions; suspicious patterns are flagged and surfaced, never silently obeyed; tool parameters are schema-validated and stripped. All LLM/observability calls go through the single redaction wrapper — direct SDK imports elsewhere are banned.
+
+- **Secrets never reach traces; files use opaque IDs.** Identifiers/names/contacts are redacted before any third-party trace. Real storage keys never appear in responses, logs, or webhooks — opaque IDs only, resolved after an ownership check.
+
+- **Deletion is exact and tested.** The deletion cascade follows the documented ordered steps; `deletion_cascade` proves post-delete row state and key revocation. Background jobs must not resurrect deleted user data.
+
+- **Security CI is a hard gate.** `{{security command}}` (lint + negative suites) is a required check; a red run blocks merge. Documented exceptions use a signed, expiring escape-hatch entry — never a silent override.
+
+<!-- ===== end Adversarial Hardening Disciplines ===== -->

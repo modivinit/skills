@@ -1,0 +1,13 @@
+{
+  "name": "modivinit-skills",
+  "owner": {
+    "name": "Vinit Modi"
+  },
+  "plugins": [
+    {
+      "name": "devils-advocate",
+      "source": ".",
+      "description": "Adversarial hardening & testing. Reads a codebase or architecture doc, threat-models it like an attacker (IDOR, ingestion, SSRF, prompt injection, data protection), and writes canonical security docs for Claude Code to follow."
+    }
+  ]
+}
