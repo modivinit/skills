@@ -1,6 +1,6 @@
 {
   "name": "devils-advocate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Think like an attacker before you ship. Reads a codebase or architecture doc, proposes an adversarial hardening + testing strategy, and writes canonical security docs for Claude Code to follow.",
   "author": {
     "name": "Vinit Modi"

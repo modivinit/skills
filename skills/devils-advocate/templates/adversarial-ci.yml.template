@@ -1,0 +1,79 @@
+# Adversarial Hardening CI (added by devils-advocate skill, {{DATE}})
+#
+# Makes the defenses in ADVERSARIAL_HARDENING.md a hard merge gate: the lint
+# rules and negative test suites from ADVERSARIAL_TEST_PLAN.md run on every PR,
+# and a red run blocks merge. A defense that isn't enforced here has already
+# started to drift.
+#
+# Setup:
+#   1. Save this file as .github/workflows/adversarial-ci.yml
+#   2. Replace the {{security command}} below with your real command
+#      (e.g. `npm run security`, `make security`, `pytest tests/security`).
+#   3. In repo Settings -> Branches, mark "adversarial-hardening" a required
+#      status check so it actually blocks merge.
+
+name: adversarial-hardening
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    name: adversarial-hardening
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Adjust this setup block to your stack ---------------------------
+      # Node example:
+      # - uses: actions/setup-node@v4
+      #   with: { node-version: "20", cache: "npm" }
+      # - run: npm ci
+      #
+      # Python example:
+      # - uses: actions/setup-python@v5
+      #   with: { python-version: "3.12" }
+      # - run: pip install -r requirements.txt
+      # ---------------------------------------------------------------------
+
+      - name: Lint + negative security suites
+        # One command that runs the lint rules AND the negative tests
+        # (cross-user IDOR, ingestion rejection, SSRF guard, prompt injection,
+        # deletion cascade) and exits non-zero on any failure.
+        run: '{{security command}}'
+
+  # --- Optional: cross-model adversarial review on the diff ----------------
+  # Uncomment to have an independent model attack the PR's changes. Requires a
+  # reviewer CLI and its API key set as a repo secret. Keep it advisory at
+  # first (continue-on-error: true); promote to a required check once it's
+  # earning its keep. The reviewer runs read-only and never writes to the repo.
+  #
+  # Note: the ${{ ... }} below are GitHub Actions expressions — leave them as-is.
+  #
+  # cross-model-review:
+  #   name: cross-model-review
+  #   runs-on: ubuntu-latest
+  #   continue-on-error: true
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with: { fetch-depth: 0 }
+  #     - name: Review the diff with an independent model
+  #       env:
+  #         # Any CLI that reads a prompt on stdin and prints a review on stdout.
+  #         DEVILS_ADVOCATE_REVIEWER: ${{ vars.DEVILS_ADVOCATE_REVIEWER }}
+  #         REVIEWER_API_KEY: ${{ secrets.REVIEWER_API_KEY }}
+  #       run: |
+  #         git diff "origin/${{ github.base_ref }}...HEAD" > /tmp/pr.diff
+  #         {
+  #           echo "You are a hostile security reviewer. Attack this diff for"
+  #           echo "IDOR, ingestion, SSRF, prompt injection, and data/deletion"
+  #           echo "flaws. For each finding: what breaks, why, impact, and the"
+  #           echo "negative test that proves the fix. No style comments."
+  #           echo
+  #           cat /tmp/pr.diff
+  #         } | $DEVILS_ADVOCATE_REVIEWER   # intentionally unquoted: command + args

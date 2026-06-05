@@ -50,6 +50,8 @@ A single command (e.g. `npm run security` / `make security`) that runs lint + th
 - a **pre-commit hook** (fast lint subset), and
 - the **CI pipeline** (full suite) as a required check, so a red run blocks merge.
 
+For GitHub projects, `templates/adversarial-ci.yml.template` is a ready-made workflow: drop it at `.github/workflows/adversarial-ci.yml`, set the project's real security command, and mark the check **required** in branch protection so it actually gates merge. It also carries an optional, commented-out **cross-model review** job that has an independent model attack the PR diff (advisory until it proves its worth — see `cross-model-review.md`).
+
 If the project uses a reviewer agent, treat its security findings as **merge-blocking**, with a signed, expiring escape-hatch row for documented exceptions (never silent overrides).
 
 ---

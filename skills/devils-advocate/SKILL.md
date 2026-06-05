@@ -25,7 +25,7 @@ Full plain-English detail, with defenses and tests for each, is in `reference/fi
 
 ## The workflow — four phases
 
-Phases 1–3 are **read-only and conversational**. Phase 4 writes files and runs **only after the user explicitly approves.** Do not skip the approval checkpoint; the value of this skill is that a human decides before anything is committed.
+Phases 1–3 (and the optional 3.5) are **read-only and conversational**. Phase 4 writes files and runs **only after the user explicitly approves.** Do not skip the approval checkpoint; the value of this skill is that a human decides before anything is committed.
 
 ### Phase 1 — Detect and map (read-only)
 
@@ -60,17 +60,27 @@ End with a **prioritized punch list** (what to fix first, ordered by risk × eff
 
 Keep the whole report dual-audience: simple enough for a founder to follow, precise enough for Claude Code to execute. Avoid jargon without a one-line gloss.
 
+### Phase 3.5 — Cross-model review (optional, off by default)
+
+Claude reviewing its own threat model shares its own blind spots — the same weights that read the code make the same assumptions about it. For high-stakes targets (auth, payments, deletion, anything regulated) or when the user asks for a second opinion, hand the analysis to an **independent** model and have it attack the conclusions.
+
+This runs **only** if the user opts in *and* a reviewer is configured via the `DEVILS_ADVOCATE_REVIEWER` environment variable — any CLI that reads a prompt on stdin and prints a review on stdout (Codex, Gemini, a local model, whatever they set). If it's unset, say so and continue without this step rather than failing.
+
+The flow: fill `templates/external-reviewer-prompt.md.template` into a self-contained brief (the other model can't see the repo, so inline the relevant excerpts), pipe it to the configured reviewer **read-only**, then show its findings **verbatim** before reconciling them into *confirmed / already-covered / disagreed*. Re-confirm the punch list before Phase 4. Full procedure and guardrails are in `reference/cross-model-review.md` — read it before running this step.
+
 ### Phase 4 — Write canonical docs (only after "yes")
 
-Generate three artifacts from the templates in `templates/`, filling them with the findings from Phases 2–3:
+Generate the artifacts below from the templates in `templates/`, filling them with the findings from Phases 2–3:
 
 1. **`ADVERSARIAL_HARDENING.md`** — the strategy and rationale (the "why"). From `templates/ADVERSARIAL_HARDENING.md.template`.
 2. **`ADVERSARIAL_TEST_PLAN.md`** — the concrete attack catalog: every negative test to write, grouped by area, each with the input to send and the expected refusal (the "prove it"). From `templates/ADVERSARIAL_TEST_PLAN.md.template`.
 3. **A `CLAUDE.md` discipline block** — short imperative rules a future Claude Code session obeys on every change. From `templates/CLAUDE-md-discipline-block.template`.
+4. **A CI gate** *(offer it; write it if the project uses GitHub and the user wants it)* — `.github/workflows/adversarial-ci.yml`, which runs the lint rules and negative suites on every PR so a red run blocks merge. From `templates/adversarial-ci.yml.template`. The discipline only holds if it's mechanically enforced; the workflow is what turns the test plan into a gate. Fill in the project's real security command and tell the user to mark the check **required** in branch protection.
 
 Placement rules:
 - Put the two `.md` files where the project keeps docs (repo root or a `docs/` or `security/` folder — ask if unclear).
 - If the project already has a `CLAUDE.md`, **append** the discipline block under a clear heading; never overwrite the existing file.
+- Put the workflow at `.github/workflows/adversarial-ci.yml`; if a security workflow already exists, fold the steps in rather than clobbering it.
 - Tell the user exactly what you wrote and where, and what Claude Code will now do differently.
 
 ## Output style notes
